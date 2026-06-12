@@ -40,7 +40,7 @@ Free plan: up to 5 notes. Premium: unlimited notes, sharing, and live co-editing
 | Payments | Stripe Checkout + webhooks |
 | State | Zustand, TanStack Query |
 | Tests | Vitest, Playwright |
-| CI | GitHub Actions → Vercel |
+| CI | GitHub Actions |
 
 Node.js 18+, npm 9+. Dev server: **http://localhost:3001** (port 3001 avoids conflicts with other local apps).
 
@@ -152,7 +152,7 @@ tests/         unit + e2e
 4. Stripe webhook: `https://your-domain.com/api/stripe/webhook`
 5. Supabase redirect: `https://your-domain.com/auth/callback`
 
-CI on `main`: lint → type-check → unit tests → build → e2e → Vercel deploy (needs `VERCEL_*` secrets).
+CI on `main`: lint → type-check → unit tests → build → e2e.
 
 ---
 

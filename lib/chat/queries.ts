@@ -2,11 +2,79 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Message, Profile, Reaction } from "@/lib/types/database";
 import { getHistoryCutoff, isProTier, type SubscriptionTier } from "@/lib/types/database";
 
+export type ThreadSummary = {
+  reply_count: number;
+  last_reply_at: string;
+  participants: Pick<Profile, "id" | "email" | "display_name" | "avatar_url">[];
+};
+
 export type MessageWithAuthor = Message & {
   author: Pick<Profile, "id" | "email" | "display_name" | "avatar_url">;
   reactions: (Reaction & { user_email?: string })[];
-  reply_count?: number;
+  thread?: ThreadSummary;
 };
+
+type ThreadReplyRow = {
+  parent_message_id: string;
+  created_at: string;
+  user_id: string;
+  author: Pick<Profile, "id" | "email" | "display_name" | "avatar_url"> | null;
+};
+
+async function attachThreadSummaries(
+  supabase: SupabaseClient,
+  messages: MessageWithAuthor[],
+): Promise<MessageWithAuthor[]> {
+  if (messages.length === 0) return messages;
+
+  const parentIds = messages.map((message) => message.id);
+  const { data: replies, error } = await supabase
+    .from("messages")
+    .select(
+      `
+      parent_message_id,
+      created_at,
+      user_id,
+      author:profiles!messages_user_id_fkey(id, email, display_name, avatar_url)
+    `,
+    )
+    .in("parent_message_id", parentIds)
+    .order("created_at", { ascending: false });
+
+  if (error || !replies?.length) return messages;
+
+  const grouped = new Map<string, ThreadReplyRow[]>();
+
+  for (const reply of replies as unknown as ThreadReplyRow[]) {
+    const bucket = grouped.get(reply.parent_message_id) ?? [];
+    bucket.push(reply);
+    grouped.set(reply.parent_message_id, bucket);
+  }
+
+  return messages.map((message) => {
+    const threadReplies = grouped.get(message.id);
+    if (!threadReplies?.length) return message;
+
+    const participants: ThreadSummary["participants"] = [];
+    const seen = new Set<string>();
+
+    for (const reply of threadReplies) {
+      if (!reply.author || seen.has(reply.author.id)) continue;
+      seen.add(reply.author.id);
+      participants.push(reply.author);
+      if (participants.length >= 3) break;
+    }
+
+    return {
+      ...message,
+      thread: {
+        reply_count: threadReplies.length,
+        last_reply_at: threadReplies[0]!.created_at,
+        participants,
+      },
+    };
+  });
+}
 
 export async function countUserChannels(supabase: SupabaseClient, userId: string) {
   const { count, error } = await supabase
@@ -61,5 +129,11 @@ export async function fetchChannelMessages(
   const { data, error } = await query;
   if (error) throw error;
 
-  return (data ?? []) as unknown as MessageWithAuthor[];
+  const messages = (data ?? []) as unknown as MessageWithAuthor[];
+
+  if (!options?.parentId) {
+    return attachThreadSummaries(supabase, messages);
+  }
+
+  return messages;
 }

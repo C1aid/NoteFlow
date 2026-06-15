@@ -19,7 +19,12 @@ export async function GET() {
       *,
       author:profiles!messages_user_id_fkey(id, email, display_name, avatar_url),
       reactions(*),
-      channel:channels!messages_channel_id_fkey(id, name, kind)
+      channel:channels!messages_channel_id_fkey(
+        id,
+        name,
+        kind,
+        workspace:workspaces(slug)
+      )
     `,
     )
     .is("parent_message_id", null)

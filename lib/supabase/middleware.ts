@@ -15,7 +15,6 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/activity") ||
     request.nextUrl.pathname.startsWith("/files") ||
     request.nextUrl.pathname.startsWith("/threads") ||
-    request.nextUrl.pathname.startsWith("/dms") ||
     request.nextUrl.pathname.startsWith("/api/stripe/checkout") ||
     request.nextUrl.pathname.startsWith("/api/channels") ||
     request.nextUrl.pathname.startsWith("/api/messages") ||

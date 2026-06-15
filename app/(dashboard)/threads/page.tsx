@@ -8,12 +8,31 @@ import { MessageContent } from "@/components/chat/message-content";
 import { UserAvatar } from "@/components/user-avatar";
 import type { MessageWithAuthor } from "@/lib/chat/queries";
 import { getDisplayName } from "@/lib/profile/display";
+import { dmChatPath, workspaceChannelPath } from "@/lib/workspace/paths";
 import { formatRelativeTime } from "@/lib/utils";
 
 type ThreadMessage = MessageWithAuthor & {
   reply_count?: number;
-  channel?: { id: string; name: string; kind: string };
+  channel?: {
+    id: string;
+    name: string;
+    kind: string;
+    workspace?: { slug: string } | null;
+  };
 };
+
+function threadHref(thread: ThreadMessage) {
+  if (thread.channel?.kind === "dm") {
+    return `${dmChatPath(thread.channel_id)}?thread=${thread.id}`;
+  }
+
+  const slug = thread.channel?.workspace?.slug;
+  if (slug) {
+    return `${workspaceChannelPath(slug, thread.channel_id)}?thread=${thread.id}`;
+  }
+
+  return `/channels/${thread.channel_id}?thread=${thread.id}`;
+}
 
 export default function ThreadsPage() {
   const [threads, setThreads] = useState<ThreadMessage[]>([]);
@@ -48,7 +67,7 @@ export default function ThreadsPage() {
             {threads.map((thread) => (
               <li key={thread.id}>
                 <Link
-                  href={`/channels/${thread.channel_id}?thread=${thread.id}`}
+                  href={threadHref(thread)}
                   className="block px-4 py-4 transition-smooth hover:bg-white/5"
                 >
                   <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">

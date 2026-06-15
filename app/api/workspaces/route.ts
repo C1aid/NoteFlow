@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { ensureUserProfile } from "@/lib/supabase/ensure-profile";
 import { slugifyWorkspaceName } from "@/lib/workspace/slug";
 import type { Workspace } from "@/lib/types/database";
 
@@ -18,13 +19,21 @@ async function resolveUniqueSlug(
   let attempt = 0;
 
   while (attempt < 20) {
-    const { data } = await supabase
-      .from("workspaces")
-      .select("id")
-      .eq("slug", slug)
-      .maybeSingle();
+    const { data: taken, error } = await supabase.rpc("workspace_slug_taken", {
+      slug,
+    });
 
-    if (!data) return slug;
+    if (error) {
+      const { data: existing } = await supabase
+        .from("workspaces")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (!existing) return slug;
+    } else if (!taken) {
+      return slug;
+    }
 
     attempt += 1;
     slug = `${base}-${attempt}`;
@@ -83,6 +92,13 @@ export async function POST(request: Request) {
       { error: parsed.error.errors[0]?.message ?? "Invalid input" },
       { status: 400 },
     );
+  }
+
+  try {
+    await ensureUserProfile(user.id, user.email ?? "");
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Profile not found";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 
   const slug = await resolveUniqueSlug(supabase, parsed.data.name);

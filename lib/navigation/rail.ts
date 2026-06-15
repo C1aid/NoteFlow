@@ -15,8 +15,7 @@ export const railItems = [
     isActive: (pathname: string) =>
       pathname.startsWith("/w/") ||
       pathname.startsWith("/search") ||
-      pathname === "/channels" ||
-      pathname.startsWith("/channels/new"),
+      pathname === "/channels",
   },
   {
     key: "dms",
@@ -51,5 +50,3 @@ export const railItems = [
       pathname.startsWith("/threads"),
   },
 ] as const;
-
-export type RailItem = (typeof railItems)[number];

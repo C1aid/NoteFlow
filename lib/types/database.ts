@@ -271,13 +271,10 @@ export interface Database {
 
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type Workspace = Database["public"]["Tables"]["workspaces"]["Row"];
-export type WorkspaceMember = Database["public"]["Tables"]["workspace_members"]["Row"];
 export type Channel = Database["public"]["Tables"]["channels"]["Row"];
 export type ChannelSection = Database["public"]["Tables"]["channel_sections"]["Row"];
-export type ChannelMember = Database["public"]["Tables"]["channel_members"]["Row"];
 export type Message = Database["public"]["Tables"]["messages"]["Row"];
 export type Reaction = Database["public"]["Tables"]["reactions"]["Row"];
-export type Subscription = Database["public"]["Tables"]["subscriptions"]["Row"];
 
 export const FREE_CHANNEL_LIMIT = 10;
 export const FREE_HISTORY_DAYS = 90;

@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { ExternalLink, GitBranch, GitCommit, GitPullRequest } from "lucide-react";
+import { applyMentionLinks } from "@/lib/chat/mentions";
 
 type GitHubPreviewData = {
   type: "pr" | "issue" | "commit" | "repo";
@@ -39,7 +40,7 @@ function GitHubPreviewCard({ url }: { url: string }) {
       href={preview.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="mt-2 block rounded-lg border border-white/10 bg-white/5 p-3 transition-smooth hover:border-white/20"
+      className="glass-card mt-2 block p-3 transition-smooth hover:border-white/20"
     >
       <div className="flex items-center gap-2 text-xs text-primary">
         <PreviewIcon type={preview.type} />
@@ -58,15 +59,16 @@ function GitHubPreviewCard({ url }: { url: string }) {
 
 export function MessageContent({ content }: { content: string }) {
   const githubUrls = [...new Set(content.match(GITHUB_URL_REGEX) ?? [])];
+  const markdown = applyMentionLinks(content);
 
   return (
-    <div className="prose prose-invert prose-sm max-w-none break-words [overflow-wrap:anywhere]">
+    <div className="prose prose-invert prose-sm max-w-none break-words [overflow-wrap:anywhere] prose-a:text-sky-400 prose-a:no-underline hover:prose-a:underline">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeHighlight]}
         components={{
           pre: ({ children }) => (
-            <pre className="overflow-x-auto rounded-lg border border-white/10 bg-black/50 p-3 text-xs">
+            <pre className="glass-card overflow-x-auto p-3 text-xs">
               {children}
             </pre>
           ),
@@ -81,26 +83,36 @@ export function MessageContent({ content }: { content: string }) {
             }
             return (
               <code
-                className="rounded bg-white/10 px-1 py-0.5 text-[0.85em]"
+                className="rounded-md bg-white/10 px-1.5 py-0.5 text-[0.85em] ring-1 ring-white/10"
                 {...props}
               >
                 {children}
               </code>
             );
           },
-          a: ({ href, children }) => (
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline-offset-2 hover:underline"
-            >
-              {children}
-            </a>
-          ),
+          a: ({ href, children }) => {
+            if (href?.startsWith("mention:")) {
+              return (
+                <span className="font-medium text-sky-400 hover:underline">
+                  {children}
+                </span>
+              );
+            }
+
+            return (
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sky-400 underline-offset-2 hover:underline"
+              >
+                {children}
+              </a>
+            );
+          },
         }}
       >
-        {content}
+        {markdown}
       </ReactMarkdown>
       {githubUrls.map((url) => (
         <GitHubPreviewCard key={url} url={url} />

@@ -1,4 +1,4 @@
--- Remove NoteFlow legacy schema (run after 005_devtalk_chat.sql)
+-- Remove legacy notes schema (run after 005_devtalk_chat.sql)
 
 DO $$
 BEGIN

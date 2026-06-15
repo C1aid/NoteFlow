@@ -1,23 +1,34 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Hash, Loader2, Lock, MessageSquare, Search, User, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Hash, Loader2, Lock, User } from "lucide-react";
 import { MessageInput } from "@/components/chat/message-input";
+import { MessageList } from "@/components/chat/message-list";
 import { MessageItem } from "@/components/chat/message-item";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { ChannelHeader } from "@/components/chat/channel-header";
+import { ChatSidePanel } from "@/components/chat/chat-side-panel";
+import {
+  UserProfilePanel,
+  type UserProfileSummary,
+} from "@/components/chat/user-profile-panel";
+import { useToast } from "@/hooks/use-toast";
 import type { MessageWithAuthor } from "@/lib/chat/queries";
 import type { Channel, Profile } from "@/lib/types/database";
 import { getDisplayName } from "@/lib/profile/display";
+import { dmChatPath } from "@/lib/workspace/paths";
 import { createClient } from "@/lib/supabase/client";
 import { useUserStore } from "@/store/user-store";
-import { cn } from "@/lib/utils";
+import { debounce } from "@/lib/utils";
 
 type ChannelPageProps = {
   channelId: string;
+  initialThreadId?: string | null;
 };
 
-export function ChannelChat({ channelId }: ChannelPageProps) {
+export function ChannelChat({ channelId, initialThreadId }: ChannelPageProps) {
+  const router = useRouter();
+  const { toast } = useToast();
   const profile = useUserStore((s) => s.profile);
   const [channel, setChannel] = useState<Channel | null>(null);
   const [dmPeer, setDmPeer] = useState<Pick<
@@ -27,9 +38,21 @@ export function ChannelChat({ channelId }: ChannelPageProps) {
   const [messages, setMessages] = useState<MessageWithAuthor[]>([]);
   const [threadParentId, setThreadParentId] = useState<string | null>(null);
   const [threadMessages, setThreadMessages] = useState<MessageWithAuthor[]>([]);
+  const [profileUser, setProfileUser] = useState<UserProfileSummary | null>(null);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const openedThreadRef = useRef<string | null>(null);
+
+  const debouncedSetSearch = useRef(
+    debounce((value: string) => setSearch(value), 300),
+  ).current;
+
+  useEffect(() => {
+    debouncedSetSearch(searchInput);
+    return () => debouncedSetSearch.cancel();
+  }, [searchInput, debouncedSetSearch]);
 
   const loadChannel = useCallback(async () => {
     const supabase = createClient();
@@ -90,6 +113,27 @@ export function ChannelChat({ channelId }: ChannelPageProps) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const openThread = useCallback(
+    async (parentId: string) => {
+      setProfileUser(null);
+      setThreadParentId(parentId);
+      await loadThread(parentId);
+    },
+    [loadThread],
+  );
+
+  useEffect(() => {
+    if (!initialThreadId || isLoading || openedThreadRef.current === initialThreadId) {
+      return;
+    }
+
+    const parent = messages.find((message) => message.id === initialThreadId);
+    if (!parent) return;
+
+    openedThreadRef.current = initialThreadId;
+    void openThread(initialThreadId);
+  }, [initialThreadId, isLoading, messages, openThread]);
+
   useEffect(() => {
     const supabase = createClient();
 
@@ -102,18 +146,6 @@ export function ChannelChat({ channelId }: ChannelPageProps) {
           schema: "public",
           table: "messages",
           filter: `channel_id=eq.${channelId}`,
-        },
-        () => {
-          void loadMessages();
-          if (threadParentId) void loadThread(threadParentId);
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "reactions",
         },
         () => {
           void loadMessages();
@@ -164,9 +196,30 @@ export function ChannelChat({ channelId }: ChannelPageProps) {
     if (threadParentId) await loadThread(threadParentId);
   };
 
-  const openThread = async (parentId: string) => {
-    setThreadParentId(parentId);
-    await loadThread(parentId);
+  const openProfile = (author: UserProfileSummary) => {
+    setThreadParentId(null);
+    setProfileUser(author);
+  };
+
+  const startDm = async (userId: string) => {
+    const res = await fetch("/api/dms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId }),
+    });
+    const data = (await res.json()) as { id?: string; error?: string };
+
+    if (!res.ok || !data.id) {
+      toast({
+        title: "Could not open DM",
+        description: data.error ?? "Something went wrong",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setProfileUser(null);
+    router.push(dmChatPath(data.id));
   };
 
   if (!channel && !isLoading) {
@@ -182,116 +235,110 @@ export function ChannelChat({ channelId }: ChannelPageProps) {
   const isDm = channel?.kind === "dm";
   const headerTitle = isDm && dmPeer ? getDisplayName(dmPeer) : channel?.name;
 
+  const ChannelIcon = isDm ? User : channel?.visibility === "private" ? Lock : Hash;
+
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-none border-0 bg-black/40 lg:rounded-xl lg:border lg:border-white/10">
-      <div className="hidden shrink-0 border-b border-white/10 px-4 py-3 lg:flex lg:items-center lg:justify-between">
-        <div className="flex min-w-0 items-center gap-2">
-          {isDm ? (
-            <User className="size-4 shrink-0 text-muted-foreground" />
-          ) : channel?.visibility === "private" ? (
-            <Lock className="size-4 shrink-0 text-muted-foreground" />
-          ) : (
-            <Hash className="size-4 shrink-0 text-muted-foreground" />
-          )}
-          <div className="min-w-0">
-            <h1 className="truncate font-semibold text-white">
-              {isDm ? headerTitle : `#${headerTitle}`}
-            </h1>
-            {channel?.description && !isDm && (
-              <p className="truncate text-xs text-muted-foreground">
-                {channel.description}
-              </p>
-            )}
-            {isDm && dmPeer && (
-              <p className="truncate text-xs text-muted-foreground">{dmPeer.email}</p>
-            )}
-          </div>
-        </div>
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="liquid-glass flex min-h-0 flex-1 flex-col overflow-hidden rounded-none lg:rounded-xl">
+        <div className="h-px shrink-0 bg-gradient-to-r from-transparent via-white/25 to-transparent" />
 
-        <div className="relative w-64">
-          <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search messages"
-            className="h-9 pl-8 text-sm"
-          />
-        </div>
-      </div>
+        <ChannelHeader
+          title={headerTitle ?? ""}
+          description={channel?.description}
+          email={dmPeer?.email}
+          isDm={isDm}
+          isPrivate={channel?.visibility === "private"}
+          search={searchInput}
+          onSearchChange={setSearchInput}
+        />
 
-      <div className="relative flex min-h-0 flex-1">
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex-1 overflow-y-auto overscroll-contain px-2 py-3 sm:px-4 sm:py-4">
-            {isLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="size-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center px-4 py-12 text-center sm:py-16">
-                <p className="text-lg font-medium text-white">
-                  {isDm
-                    ? `Message ${headerTitle}`
-                    : `Welcome to #${channel?.name}`}
-                </p>
-                <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-                  This is the start of the channel. Say hello — Markdown and code
-                  blocks are supported.
-                </p>
-              </div>
-            ) : (
-              messages.map((message) => (
-                <MessageItem
-                  key={message.id}
-                  message={message}
+        <div className="relative flex min-h-0 flex-1">
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="flex-1 overflow-y-auto overscroll-contain px-2 py-3 sm:px-4 sm:py-4">
+              {isLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="size-6 animate-spin text-gray-400" />
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center px-4 py-12 text-center sm:py-16">
+                  <div className="glass-card max-w-sm px-6 py-8">
+                    <div className="liquid-glass mx-auto flex size-12 items-center justify-center rounded-xl">
+                      <ChannelIcon className="size-5 text-white/80" />
+                    </div>
+                    <p className="mt-4 text-lg font-semibold tracking-tight text-white">
+                      {isDm
+                        ? `Message ${headerTitle}`
+                        : `Welcome to #${channel?.name}`}
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed text-gray-400">
+                      This is the start of the channel. Say hello — Markdown and
+                      code blocks are supported.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <MessageList
+                  messages={messages}
                   currentUserId={profile?.id}
                   onOpenThread={openThread}
                   onToggleReaction={toggleReaction}
+                  onAuthorClick={openProfile}
                 />
-              ))
-            )}
-            <div ref={bottomRef} />
+              )}
+              <div ref={bottomRef} />
+            </div>
+
+            <MessageInput onSend={(content) => sendMessage(content)} />
           </div>
 
-          <MessageInput onSend={(content) => sendMessage(content)} />
-        </div>
-
-        {threadParentId && parentMessage && (
-          <div className="fixed inset-0 z-30 flex flex-col bg-black pt-[3.75rem] pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] lg:relative lg:inset-auto lg:z-0 lg:w-80 lg:border-l lg:border-white/10 lg:bg-black/60 lg:pb-0 lg:pt-0">
-            <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-3 py-2.5">
-              <span className="text-sm font-medium text-white">Thread</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8"
-                onClick={() => setThreadParentId(null)}
-              >
-                <X className="size-4" />
-              </Button>
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
+          {threadParentId && parentMessage && (
+          <ChatSidePanel
+            title="Thread"
+            onClose={() => setThreadParentId(null)}
+            footer={
+              <MessageInput
+                isThread
+                channelName={channel?.name}
+                placeholder="Reply…"
+                onSend={(content) => sendMessage(content, threadParentId)}
+                onAlsoSendToChannel={(content) => sendMessage(content)}
+              />
+            }
+          >
+            <div className="p-2">
               <MessageItem
                 message={parentMessage}
                 currentUserId={profile?.id}
                 onToggleReaction={toggleReaction}
+                onAuthorClick={openProfile}
                 compact
               />
               <div className="my-2 border-t border-white/10" />
-              {threadMessages.map((msg) => (
-                <MessageItem
-                  key={msg.id}
-                  message={msg}
-                  currentUserId={profile?.id}
-                  onToggleReaction={toggleReaction}
-                  compact
-                />
-              ))}
+              <MessageList
+                messages={threadMessages}
+                currentUserId={profile?.id}
+                onToggleReaction={toggleReaction}
+                onAuthorClick={openProfile}
+                compact
+              />
             </div>
-            <MessageInput
-              placeholder="Reply in thread…"
-              onSend={(content) => sendMessage(content, threadParentId)}
-            />
-          </div>
+          </ChatSidePanel>
         )}
+
+        {profileUser && (
+          <ChatSidePanel
+            title="Profile"
+            size="wide"
+            onClose={() => setProfileUser(null)}
+          >
+            <UserProfilePanel
+              profile={profileUser}
+              currentUserId={profile?.id}
+              onMessage={startDm}
+            />
+          </ChatSidePanel>
+          )}
+        </div>
       </div>
     </div>
   );

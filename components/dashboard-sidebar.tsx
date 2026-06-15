@@ -23,12 +23,7 @@ import {
 import { getDisplayName } from "@/lib/profile/display";
 import { getSubscriptionLabel, useUserStore } from "@/store/user-store";
 
-export {
-  showSecondarySidebar,
-  getActiveChannelId,
-  showHomeSidebar,
-  showDmSidebar,
-};
+export { showSecondarySidebar };
 
 export function DashboardSidebar() {
   const pathname = usePathname();
@@ -129,7 +124,7 @@ export function DashboardSidebar() {
 
   const homeSidebarContent = (
     <>
-      <div className="mb-1 flex items-center justify-between px-1">
+      <div className="mb-1 flex items-center justify-between gap-2 overflow-visible px-1">
         {workspaceSlug && sidebar ? (
           <WorkspaceSwitcher
             currentSlug={workspaceSlug}

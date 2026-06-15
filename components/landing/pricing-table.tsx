@@ -73,7 +73,6 @@ export function PricingTable() {
         </div>
 
         <div className="mx-auto mt-10 grid max-w-6xl gap-4 sm:mt-16 sm:gap-6 lg:grid-cols-3">
-          {/* Free */}
           <div className="glass-card flex flex-col p-6 sm:p-8">
             <p className="text-lg font-semibold text-white">Free</p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -93,7 +92,6 @@ export function PricingTable() {
             </Link>
           </div>
 
-          {/* Pro */}
           <div className="glass-card relative flex flex-col border-primary/30 p-6 ring-1 ring-primary/25 sm:p-8">
             <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-white px-3 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-black">
               Recommended
@@ -117,7 +115,6 @@ export function PricingTable() {
             </p>
           </div>
 
-          {/* Business+ */}
           <div className="glass-card flex flex-col p-6 sm:p-8">
             <p className="text-lg font-semibold text-white">Business+</p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -139,7 +136,6 @@ export function PricingTable() {
           </div>
         </div>
 
-        {/* Mobile feature comparison */}
         <div className="mx-auto mt-10 max-w-6xl space-y-3 md:hidden">
           {features.map((row) => (
             <div
@@ -171,7 +167,6 @@ export function PricingTable() {
           ))}
         </div>
 
-        {/* Desktop feature table */}
         <div className="glass-card mx-auto mt-10 hidden max-w-6xl overflow-hidden sm:mt-16 md:block">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-left text-sm">

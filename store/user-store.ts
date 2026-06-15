@@ -7,15 +7,13 @@ interface UserState {
   isLoading: boolean;
   setProfile: (profile: Profile | null) => void;
   setLoading: (loading: boolean) => void;
-  isPro: () => boolean;
 }
 
-export const useUserStore = create<UserState>((set, get) => ({
+export const useUserStore = create<UserState>((set) => ({
   profile: null,
   isLoading: true,
   setProfile: (profile) => set({ profile }),
   setLoading: (isLoading) => set({ isLoading }),
-  isPro: () => isProTier(get().profile?.subscription_tier ?? "free"),
 }));
 
 export function getSubscriptionLabel(tier: SubscriptionTier): string {

@@ -6,12 +6,13 @@ import { cn } from "@/lib/utils";
 type MotionObserverOptions = {
   threshold?: number;
   rootMargin?: string;
+  once?: boolean;
 };
 
 function useMotionInView<T extends HTMLElement>(
   options: MotionObserverOptions = {},
 ) {
-  const { threshold = 0.12, rootMargin = "0px 0px -6% 0px" } = options;
+  const { threshold = 0.12, rootMargin = "0px 0px -2% 0px", once = true } = options;
   const ref = useRef<T>(null);
   const [inView, setInView] = useState(false);
 
@@ -25,13 +26,23 @@ function useMotionInView<T extends HTMLElement>(
     }
 
     const observer = new IntersectionObserver(
-      ([entry]) => setInView(entry?.isIntersecting ?? false),
+      ([entry]) => {
+        const intersecting = entry?.isIntersecting ?? false;
+        if (intersecting) {
+          setInView(true);
+          if (once) {
+            observer.disconnect();
+          }
+        } else if (!once) {
+          setInView(false);
+        }
+      },
       { threshold, rootMargin },
     );
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, [threshold, rootMargin]);
+  }, [threshold, rootMargin, once]);
 
   return { ref, inView };
 }
@@ -41,6 +52,8 @@ type RevealProps = {
   className?: string;
   delay?: number;
   y?: number;
+  /** Opacity-only reveal — safe to wrap buttons, toggles, and links. */
+  safe?: boolean;
   as?: "div" | "section" | "article" | "li" | "footer";
 };
 
@@ -49,24 +62,58 @@ export function Reveal({
   className,
   delay = 0,
   y = 36,
+  safe = false,
   as: Tag = "div",
 }: RevealProps) {
   const { ref, inView } = useMotionInView<HTMLDivElement>();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!inView) {
+      setReady(false);
+      return;
+    }
+
+    if (safe) {
+      setReady(true);
+    }
+  }, [inView, safe]);
+
+  const motionClass = safe ? "motion-reveal-safe" : "motion-reveal";
+  const visibleClass = safe ? "motion-reveal-safe-visible" : "motion-reveal-visible";
 
   return (
     <Tag
       ref={ref as never}
       className={cn(
-        "motion-reveal",
-        inView && "motion-reveal-visible",
+        motionClass,
+        inView && visibleClass,
+        (safe || ready) && inView && "motion-reveal-ready",
         className,
       )}
       style={
-        {
-          "--reveal-delay": `${delay}ms`,
-          "--reveal-y": `${y}px`,
-        } as React.CSSProperties
+        safe
+          ? ({ "--reveal-delay": `${delay}ms` } as React.CSSProperties)
+          : ({
+              "--reveal-delay": `${delay}ms`,
+              "--reveal-y": `${y}px`,
+            } as React.CSSProperties)
       }
+      onTransitionEnd={(event) => {
+        if (
+          !safe &&
+          inView &&
+          (event.propertyName === "transform" || event.propertyName === "opacity")
+        ) {
+          setReady(true);
+        }
+      }}
     >
       {children}
     </Tag>
@@ -107,7 +154,7 @@ export function RevealText({
 }: RevealTextProps) {
   const { ref, inView } = useMotionInView<HTMLElement>({
     threshold: 0.2,
-    rootMargin: "0px 0px -6% 0px",
+    rootMargin: "0px 0px -2% 0px",
   });
   const words = text.split(/\s+/).filter(Boolean);
 

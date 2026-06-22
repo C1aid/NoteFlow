@@ -35,7 +35,7 @@ export function FaqAccordion({ items }: { items: FaqItem[] }) {
             <div className="py-4 sm:py-5">
             <button
               type="button"
-              className="flex w-full items-start justify-between gap-3 rounded-lg text-left text-[15px] font-medium leading-snug transition-smooth hover:text-primary sm:items-center sm:gap-4 sm:text-base"
+              className="flex w-full touch-manipulation items-start justify-between gap-3 rounded-lg text-left text-[15px] font-medium leading-snug transition-smooth hover:text-primary sm:items-center sm:gap-4 sm:text-base"
               onClick={() => toggle(index)}
               aria-expanded={isOpen}
             >

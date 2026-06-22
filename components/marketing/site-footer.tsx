@@ -83,7 +83,7 @@ export function SiteFooter() {
                     <li key={label}>
                       <Link
                         href={href}
-                        className="text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground"
+                        className="touch-manipulation text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground"
                       >
                         {label}
                       </Link>

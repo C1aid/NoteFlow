@@ -72,8 +72,8 @@ export function SiteHeader({ overlapHero = false }: SiteHeaderProps) {
 
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-black/60 backdrop-blur-md transition-opacity duration-300 md:hidden",
-          menuOpen ? "opacity-100" : "pointer-events-none opacity-0",
+          "fixed inset-0 z-40 bg-black/60 backdrop-blur-md transition-[opacity,visibility] duration-300 md:hidden",
+          menuOpen ? "visible opacity-100" : "invisible pointer-events-none opacity-0",
         )}
         style={{ transitionTimingFunction: "var(--ease-smooth)" }}
         onClick={closeMenu}
@@ -81,74 +81,76 @@ export function SiteHeader({ overlapHero = false }: SiteHeaderProps) {
       />
 
       <header className={cn(shellClass, "md:hidden")}>
-        <div className={cn(barClass, "relative z-50")}>
-          <Link
-            href="/"
-            className="text-lg font-semibold tracking-tight text-white"
-            onClick={closeMenu}
-          >
-            DevTalk
-          </Link>
+        <div className="relative">
+          <div className={barClass}>
+            <Link
+              href="/"
+              className="text-lg font-semibold tracking-tight text-white"
+              onClick={closeMenu}
+            >
+              DevTalk
+            </Link>
 
-          <button
-            type="button"
+            <button
+              type="button"
+              className={cn(
+                "rounded-xl p-2 text-white transition-smooth",
+                menuOpen ? "bg-white/10" : "hover:bg-white/10",
+              )}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            </button>
+          </div>
+
+          <div
             className={cn(
-              "rounded-xl p-2 text-white transition-smooth",
-              menuOpen ? "bg-white/10" : "hover:bg-white/10",
+              "absolute left-0 right-0 top-[calc(100%+0.75rem)] z-50 origin-top transition-[opacity,transform,visibility] duration-300",
+              menuOpen
+                ? "visible pointer-events-auto translate-y-0 scale-100 opacity-100"
+                : "invisible pointer-events-none -translate-y-2 scale-[0.98] opacity-0",
             )}
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((open) => !open)}
+            style={{ transitionTimingFunction: "var(--ease-smooth)" }}
+            aria-hidden={!menuOpen}
           >
-            {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-          </button>
-        </div>
+            <div className="liquid-glass overflow-hidden rounded-2xl shadow-[0_28px_80px_rgba(0,0,0,0.55)]">
+              <nav className="px-3 pb-1 pt-2">
+                {navLinks.map(({ label, href }) => (
+                  <a
+                    key={href}
+                    href={href}
+                    className="group flex items-center justify-between rounded-xl px-3 py-3.5 transition-smooth hover:bg-white/[0.06] active:bg-white/[0.08]"
+                    onClick={closeMenu}
+                  >
+                    <span className="text-[17px] font-medium tracking-tight text-white">
+                      {label}
+                    </span>
+                    <ArrowRight
+                      className="size-4 text-white/25 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:text-white/60"
+                      aria-hidden
+                    />
+                  </a>
+                ))}
+              </nav>
 
-        <div
-          className={cn(
-            "relative z-50 mt-3 origin-top transition-[opacity,transform] duration-300",
-            menuOpen
-              ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
-              : "pointer-events-none -translate-y-2 scale-[0.98] opacity-0",
-          )}
-          style={{ transitionTimingFunction: "var(--ease-smooth)" }}
-          aria-hidden={!menuOpen}
-        >
-          <div className="liquid-glass overflow-hidden rounded-2xl shadow-[0_28px_80px_rgba(0,0,0,0.55)]">
-            <nav className="px-3 pb-1 pt-2">
-              {navLinks.map(({ label, href }) => (
-                <a
-                  key={href}
-                  href={href}
-                  className="group flex items-center justify-between rounded-xl px-3 py-3.5 transition-smooth hover:bg-white/[0.06] active:bg-white/[0.08]"
+              <div className="space-y-2.5 p-4 pt-0">
+                <Link
+                  href="/signup"
+                  className="flex h-12 w-full items-center justify-center rounded-xl bg-white text-[15px] font-medium text-black transition-smooth hover:bg-gray-100"
                   onClick={closeMenu}
                 >
-                  <span className="text-[17px] font-medium tracking-tight text-white">
-                    {label}
-                  </span>
-                  <ArrowRight
-                    className="size-4 text-white/25 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:text-white/60"
-                    aria-hidden
-                  />
-                </a>
-              ))}
-            </nav>
-
-            <div className="space-y-2.5 p-4 pt-0">
-              <Link
-                href="/signup"
-                className="flex h-12 w-full items-center justify-center rounded-xl bg-white text-[15px] font-medium text-black transition-smooth hover:bg-gray-100"
-                onClick={closeMenu}
-              >
-                Get started free
-              </Link>
-              <Link
-                href="/login"
-                className="liquid-glass flex h-12 w-full items-center justify-center rounded-xl border border-white/15 text-[15px] font-medium text-white transition-smooth hover:bg-white/[0.06]"
-                onClick={closeMenu}
-              >
-                Sign in
-              </Link>
+                  Get started free
+                </Link>
+                <Link
+                  href="/login"
+                  className="liquid-glass flex h-12 w-full items-center justify-center rounded-xl border border-white/15 text-[15px] font-medium text-white transition-smooth hover:bg-white/[0.06]"
+                  onClick={closeMenu}
+                >
+                  Sign in
+                </Link>
+              </div>
             </div>
           </div>
         </div>

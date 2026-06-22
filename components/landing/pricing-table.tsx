@@ -150,7 +150,7 @@ function LiquidGlassSegmentedControl<T extends string>({
             aria-checked={isActive}
             onClick={() => onChange(option.value)}
             className={cn(
-              "relative z-10 px-5 py-2.5 text-xs font-medium uppercase tracking-[0.16em] transition-colors sm:px-6",
+              "relative z-10 touch-manipulation px-5 py-2.5 text-xs font-medium uppercase tracking-[0.16em] transition-colors sm:px-6",
               isActive ? "text-white" : "text-white/40 hover:text-white/60",
             )}
           >
@@ -425,7 +425,7 @@ function PricingCard({
     <div
       className={cn(
         "relative flex h-full flex-col",
-        isHigh ? "z-10 md:-mt-6" : "z-0 md:mt-6",
+        isHigh ? "md:-mt-6" : "md:mt-6",
       )}
     >
       <div
@@ -569,11 +569,11 @@ export function PricingTable() {
         </Reveal>
 
         <div className="mx-auto mt-12 max-w-6xl sm:mt-14">
-          <Reveal delay={60} className="mb-10 flex justify-center sm:mb-12">
+          <Reveal safe delay={60} className="relative z-20 mb-10 flex justify-center sm:mb-12">
             <BillingToggle interval={billingInterval} onChange={setBillingInterval} />
           </Reveal>
 
-          <div className="grid gap-5 md:grid-cols-3 md:items-end md:gap-6 lg:gap-8">
+          <div className="relative z-10 grid gap-5 md:grid-cols-3 md:items-end md:gap-6 lg:gap-8">
             {plans.map((plan, index) => (
               <Reveal key={plan.id} delay={index * 90} y={32}>
                 <PricingCard plan={plan} interval={billingInterval} />
@@ -581,7 +581,7 @@ export function PricingTable() {
             ))}
           </div>
         </div>
-        <Reveal delay={120} className="mx-auto mt-14 max-w-6xl sm:mt-20">
+        <Reveal safe delay={120} className="relative z-10 mx-auto mt-14 max-w-6xl sm:mt-20">
           <div className="mx-auto mb-8 max-w-xl text-center sm:mb-10">
             <h3 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
               What&apos;s included

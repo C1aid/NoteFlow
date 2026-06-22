@@ -336,22 +336,49 @@
 
   .motion-reveal {
     opacity: 0;
+    visibility: hidden;
     filter: blur(var(--reveal-blur, 10px));
     transform: translate3d(0, var(--reveal-y, 36px), 0) scale(0.97);
+    pointer-events: none;
   }
 
   .motion-reveal-visible {
     opacity: 1;
+    visibility: visible;
     filter: blur(0);
     transform: translate3d(0, 0, 0) scale(1);
+    pointer-events: none;
     transition:
       opacity 1s var(--ease-smooth),
       transform 1s var(--ease-smooth),
-      filter 1s var(--ease-smooth);
+      filter 1s var(--ease-smooth),
+      visibility 0s linear 0s;
     transition-delay: var(--reveal-delay, 0ms);
   }
 
+  .motion-reveal-visible.motion-reveal-ready {
+    pointer-events: auto;
+  }
+
   .motion-reveal:not(.motion-reveal-visible) {
+    transition: none;
+  }
+
+  .motion-reveal-safe {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .motion-reveal-safe.motion-reveal-safe-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity 0.7s var(--ease-smooth);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+
+  .motion-reveal-safe:not(.motion-reveal-safe-visible) {
     transition: none;
   }
 
@@ -360,12 +387,14 @@
     opacity: 0;
     filter: blur(10px);
     transform: translate3d(0, 14px, 0);
+    pointer-events: none;
   }
 
   .motion-word-visible {
     opacity: 1;
     filter: blur(0);
     transform: translate3d(0, 0, 0);
+    pointer-events: none;
     transition:
       opacity 0.8s var(--ease-smooth),
       transform 0.8s var(--ease-smooth),
@@ -385,13 +414,16 @@
     .hero-char,
     .motion-fade,
     .motion-reveal,
+    .motion-reveal-safe,
     .motion-word,
     .auth-code-panel {
       animation: none !important;
       opacity: 1 !important;
+      visibility: visible !important;
       transform: none !important;
       filter: none !important;
       transition: none !important;
+      pointer-events: auto !important;
     }
 
     .faq-content,

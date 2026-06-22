@@ -81,7 +81,7 @@ export default function LandingPage() {
         <CtaSection />
       </main>
 
-      <Reveal y={20}>
+      <Reveal safe y={20}>
         <SiteFooter />
       </Reveal>
     </div>
